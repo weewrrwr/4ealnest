@@ -2,7 +2,7 @@
 # Menu Selection
 # -----------------------------
 Write-Host "Select Mode:"
-Write-Host "1. Install"
+Write-Host "1. Install Classic Of God"
 Write-Host "2. Clean"
 
 $choice = Read-Host "Enter choice (1/2)"
@@ -73,3 +73,4 @@ elseif ($choice -eq "2") {
 else {
     Write-Host "Invalid choice."
 }
+
